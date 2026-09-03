@@ -1,0 +1,19 @@
+# Keep development-only files out of the archives GitHub generates for a tag or
+# release. plugin-update-checker downloads that archive, so anything listed here
+# never reaches an installed site — while staying in the repo for development.
+#
+# Verify after a release with:
+#   gh release download vX.Y.Z --repo NguyenThong251/lexa-search --archive=zip -O /tmp/r.zip && unzip -l /tmp/r.zip
+
+/tests           export-ignore
+/bin             export-ignore
+/PLAN.md         export-ignore
+/RELEASING.md    export-ignore
+/.gitignore      export-ignore
+/.gitattributes  export-ignore
+
+# Normalize line endings so PHP files are stable across machines.
+*.php text eol=lf
+*.md  text eol=lf
+*.txt text eol=lf
+*.sh  text eol=lf

@@ -1,0 +1,23 @@
+# Build output
+/dist/
+*.zip
+
+# Composer (the plugin ships its own PSR-4 autoloader in bootstrap.php;
+# there is no composer install step)
+/vendor/
+composer.lock
+
+# Local/editor cruft
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Never commit credentials. The GitHub token for update checks belongs in
+# wp-config.php as LEXA_GITHUB_TOKEN, never in the plugin tree.
+.env
+.env.*
+*.key
+*.pem

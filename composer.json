@@ -1,0 +1,19 @@
+{
+    "name": "quocduydev/lexa-search",
+    "description": "Multilingual mixed-language search analyzer for WordPress / WooCommerce",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "authors": [
+        { "name": "quocduydev", "homepage": "https://quocduy.com.vn", "role": "Developer" }
+    ],
+    "require": {
+        "php": ">=8.0",
+        "ext-mbstring": "*"
+    },
+    "autoload": {
+        "psr-4": { "Lexa\\": "src/" }
+    },
+    "config": {
+        "optimize-autoloader": true
+    }
+}
