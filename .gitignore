@@ -15,9 +15,14 @@ Thumbs.db
 *.swp
 *~
 
-# Never commit credentials. The GitHub token for update checks belongs in
-# wp-config.php as LEXA_GITHUB_TOKEN, never in the plugin tree.
+# Never commit credentials. A GitHub token (only needed to raise the API rate
+# limit now the repo is public) belongs in wp-config.php as LEXA_GITHUB_TOKEN,
+# never in the plugin tree.
 .env
 .env.*
 *.key
 *.pem
+
+# Internal roadmap / product planning. Deliberately untracked: this repo is
+# public, and PLAN.md carries commercial positioning and the Pro roadmap.
+/PLAN.md

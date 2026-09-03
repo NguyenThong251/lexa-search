@@ -3,7 +3,7 @@
  * Plugin Name:       Lexa Search
  * Plugin URI:        https://quocduy.com.vn
  * Description:       Multilingual, mixed-language search (Vietnamese + English + model codes) for WordPress and WooCommerce — per-token language routing, diacritic-insensitive, BM25F relevance, self-hosted on MySQL.
- * Version:           0.4.1
+ * Version:           0.4.2
  * Requires PHP:      8.0
  * Requires at least: 6.0
  * Author:            quocduydev
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('LEXA_VERSION', '0.4.1');
+define('LEXA_VERSION', '0.4.2');
 define('LEXA_FILE', __FILE__);
 define('LEXA_DIR', plugin_dir_path(__FILE__));
 define('LEXA_URL', plugin_dir_url(__FILE__));
@@ -32,19 +32,17 @@ add_action('plugins_loaded', ['Lexa\\Plugin', 'boot']);
 
 /*
  * -----------------------------------------------------------------------------
- * Self-hosted updates — GitHub Releases on a PRIVATE repo
+ * Self-hosted updates — GitHub Releases
  * -----------------------------------------------------------------------------
  * Puts a normal "update now" notice on the Plugins screen. Release process and
  * the full list of ways this can silently break: see RELEASING.md.
  *
- * The repo is private, so a GitHub token is required. Do NOT put it in this
- * file — it would be committed to git and copied into every plugin backup.
- * Add it to wp-config.php instead:
+ * The repo is public, so NO token is needed — update checks work out of the box.
+ * A token is only worth setting on a host that hits GitHub's 60-requests-per-hour
+ * unauthenticated limit. If you do set one, put it in wp-config.php, never in
+ * this file — anything here is committed to git and copied into every backup:
  *
- *     define('LEXA_GITHUB_TOKEN', 'github_pat_...');
- *
- * Without that constant the plugin runs exactly as before; only the update
- * check is skipped.
+ *     define('LEXA_GITHUB_TOKEN', '<token>');
  */
 add_action('plugins_loaded', 'lexa_init_update_checker', 1);
 function lexa_init_update_checker() {

@@ -1,6 +1,6 @@
 # Releasing Lexa Search
 
-Updates are delivered from the **private** GitHub repo
+Updates are delivered from the **public** GitHub repo
 [`NguyenThong251/lexa-search`](https://github.com/NguyenThong251/lexa-search)
 via [plugin-update-checker](https://github.com/YahnisElsts/plugin-update-checker)
 v5.7, vendored at `plugin-update-checker/`. A new GitHub Release makes the normal
@@ -9,29 +9,26 @@ has the plugin installed.
 
 ---
 
-## One-time setup on each site
+## Setup on each site
 
-The repo is private, so the site needs a GitHub token. **Never put it in the
-plugin** — it would be committed to git and copied into every plugin backup.
-Add it to `wp-config.php`, above the `/* That's all, stop editing! */` line:
+**Nothing.** The repo is public, so update checks work as soon as the plugin is
+installed — no token, no configuration.
+
+A GitHub token is only worth adding on a host that exhausts GitHub's
+60-requests-per-hour unauthenticated limit (shared hosting behind a busy NAT).
+If you need one, put it in `wp-config.php` — never in the plugin, where it would
+be committed to git and copied into every backup:
 
 ```php
-define('LEXA_GITHUB_TOKEN', '<paste-your-fine-grained-token-here>');
+define('LEXA_GITHUB_TOKEN', '<token>');
 ```
 
-Create the token at **GitHub → Settings → Developer settings → Personal access
-tokens → Fine-grained tokens**:
+A read-only, fine-grained token is enough; the classic `repo` scope would grant
+read *and write* to every private repo on the account.
 
-| Field | Value |
-|---|---|
-| Repository access | **Only select repositories** → `lexa-search` |
-| Permissions | **Contents: Read-only** |
-| Expiration | set a calendar reminder — an expired token fails **silently** |
-
-A fine-grained token scoped to this one repo is important: the classic `repo`
-scope would grant read *and write* to every private repo on the account.
-
-Without the constant the plugin works normally — it just never checks for updates.
+> **Do not commit internal planning to this repo.** It is public. `PLAN.md` is
+> in `.gitignore` for that reason — it carries commercial positioning and the
+> Pro roadmap, and it stays local only.
 
 ---
 
@@ -81,7 +78,8 @@ it is up to date. Check them in this order when an expected update doesn't show.
 |---|---|---|
 | `Version:` header not bumped | PUC reads the header from the tagged commit and **ignores the tag name**. `version_compare('0.3.0','0.3.0','>')` is false. | Bump the header, re-tag |
 | Only `LEXA_VERSION` bumped | Neither WordPress nor PUC ever reads that constant | Bump the header too — `bin/release.sh check` catches this |
-| Token missing, wrong or expired | Every GitHub API call 404s | Re-issue the token; check `wp-content/debug.log` for `[lexa-search] update check failed` |
+| Repo made private again, renamed, or a wrong/expired `LEXA_GITHUB_TOKEN` is set | GitHub answers **404, not 403**, for a repo it will not show you — so an auth problem is indistinguishable from "no such repo" | Confirm the repo is public: `curl -s -o /dev/null -w '%{http_code}\n' https://api.github.com/repos/NguyenThong251/lexa-search/releases/latest` must print 200 with no credentials. Then check `wp-content/debug.log` for `[lexa-search] update check failed` |
+| GitHub rate limit reached (60/hour unauthenticated, shared per server IP) | API returns 403 | Set `LEXA_GITHUB_TOKEN` in `wp-config.php` |
 | Plugin files nested in a subfolder in the repo | PUC fetches `lexa-search.php` from the **repo root** | Keep the plugin at the repo root |
 | URL written as `…/lexa-search/tree/main` or `www.github.com/…` | PUC's service detection needs exactly two path segments on host `github.com`; otherwise it falls back to a JSON checker | Use `https://github.com/NguyenThong251/lexa-search/` |
 | URL written with a `.git` suffix | Accepted as a repo name, so the API calls 404 | Drop the `.git` |

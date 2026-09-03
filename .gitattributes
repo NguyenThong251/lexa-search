@@ -7,7 +7,6 @@
 
 /tests           export-ignore
 /bin             export-ignore
-/PLAN.md         export-ignore
 /RELEASING.md    export-ignore
 /.gitignore      export-ignore
 /.gitattributes  export-ignore
