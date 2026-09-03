@@ -66,7 +66,15 @@ final class Commands
         $last  = \Lexa\Wp\Drainer::lastDrainAt();
         \WP_CLI::log('Indexed docs : ' . $stats['doc_count']);
         \WP_CLI::log('Candidates   : ' . EngineManager::totalCandidates() . ' (' . implode(', ', Settings::postTypes()) . ')');
-        \WP_CLI::log('Ready (front): ' . (get_option(\Lexa\Wp\QueryIntegration::READY_OPTION) ? 'yes' : 'no'));
+        // Both halves of the real predicate — an index that is built but a kill
+        // switch that is off still means the front end uses WordPress's search.
+        $indexReady = (bool) get_option(\Lexa\Wp\QueryIntegration::READY_OPTION);
+        \WP_CLI::log('Index ready  : ' . ($indexReady ? 'yes' : 'no'));
+        \WP_CLI::log('Front search : ' . (\Lexa\Wp\QueryIntegration::active()
+            ? 'engine'
+            : 'WordPress default' . ($indexReady ? '  [engine switched OFF in Settings]' : '')));
+        \WP_CLI::log('Recency      : ' . Settings::recencyMode()
+            . ' (' . Settings::recencyColumn() . ', half-life ' . Settings::recencyHalfLifeDays() . 'd)');
         \WP_CLI::log('Pending jobs : ' . \Lexa\Wp\Drainer::pendingCount() . (\Lexa\Wp\Drainer::isStalled() ? '  [STALLED — run: wp lexa run]' : ''));
         \WP_CLI::log('Last drain   : ' . ($last ? human_time_diff($last) . ' ago' : 'never'));
     }

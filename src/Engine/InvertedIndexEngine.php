@@ -4,6 +4,7 @@ namespace Lexa\Engine;
 
 use Lexa\Analysis\Analyzer;
 use Lexa\Engine\Contracts\IndexStore;
+use Lexa\Engine\Contracts\Reranker;
 use Lexa\Engine\Contracts\SearchEngine;
 
 /**
@@ -19,7 +20,8 @@ final class InvertedIndexEngine implements SearchEngine
     public function __construct(
         private IndexStore $store,
         private Analyzer $analyzer,
-        private EngineConfig $cfg
+        private EngineConfig $cfg,
+        private ?Reranker $reranker = null
     ) {
         $this->scorer = new Bm25fScorer($cfg);
     }
@@ -118,6 +120,12 @@ final class InvertedIndexEngine implements SearchEngine
         $zoneLen = $this->store->zoneLengthsForDocs(array_keys($docIds));
 
         $scores = $this->scorer->score($terms, $df, $n, $avgdl, $postings, $zoneLen, $groups, $minGroups);
+
+        // Second pass (e.g. freshness). Must run BEFORE the truncation below,
+        // or it would only ever reorder the handful of rows a small limit keeps.
+        if ($this->reranker !== null && $scores) {
+            $scores = $this->reranker->rerank($scores);
+        }
 
         $out = [];
         foreach ($scores as $docId => $score) {

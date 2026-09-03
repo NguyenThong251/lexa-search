@@ -55,7 +55,13 @@ final class AdminPage
         $pending    = \Lexa\Wp\Drainer::pendingCount();
         $lastDrain  = \Lexa\Wp\Drainer::lastDrainAt();
         $stalled    = \Lexa\Wp\Drainer::isStalled();
-        $ready      = (bool) get_option(\Lexa\Wp\QueryIntegration::READY_OPTION);
+        // The index being built is only half the story — the kill switch has to
+        // be on too, or the front end is still served by WordPress's LIKE search.
+        // Reporting on lexa_ready alone showed a green "using engine" tile on
+        // exactly the sites where search was silently off.
+        $indexReady = (bool) get_option(\Lexa\Wp\QueryIntegration::READY_OPTION);
+        $switchOn   = Settings::isEnabled();
+        $ready      = $indexReady && $switchOn;
         ?>
         <div class="wrap">
             <h1>Lexa Search &rarr; Indexing</h1>
@@ -66,9 +72,14 @@ final class AdminPage
                 <strong>Hàng đợi index chưa được xử lý</strong> — <?php echo esc_html((string) $pending); ?> mục đang chờ và không drain gần đây.
                 Bấm <em>Process pending now</em>, hoặc đặt cron máy chủ: <code style="user-select:all;">*/5 * * * * <?php echo esc_html($cli); ?> &amp;&amp; wp lexa run</code>
             </div>
-            <?php elseif (!$ready) : ?>
+            <?php elseif (!$indexReady) : ?>
             <div class="notice notice-warning" style="padding:10px 14px;">
                 Chưa sẵn sàng phục vụ front-end — bấm <em>Build / rebuild index</em> để bật.
+            </div>
+            <?php elseif (!$switchOn) : ?>
+            <div class="notice notice-warning" style="padding:10px 14px;">
+                Index đã sẵn sàng nhưng <strong>tìm kiếm front-end đang TẮT</strong> — site vẫn dùng tìm kiếm mặc định của WordPress.
+                Bật lại ở <a href="<?php echo esc_url(admin_url('admin.php?page=' . self::SLUG . '-settings')); ?>">Settings &rarr; Front-end search</a>.
             </div>
             <?php endif; ?>
 
@@ -87,7 +98,9 @@ final class AdminPage
                 </div>
                 <div style="background:#fff;border:1px solid #c3c4c7;border-radius:8px;padding:14px 18px;">
                     <div style="color:#646970;font-size:13px;">Front-end</div>
-                    <div style="font-size:18px;font-weight:500;margin-top:5px;color:<?php echo $ready ? '#00a32a' : '#646970'; ?>;"><?php echo $ready ? 'dùng engine' : 'chưa sẵn sàng'; ?></div>
+                    <div style="font-size:18px;font-weight:500;margin-top:5px;color:<?php echo $ready ? '#00a32a' : ($indexReady ? '#d63638' : '#646970'); ?>;">
+                        <?php echo $ready ? 'dùng engine' : ($indexReady ? 'đã TẮT' : 'chưa sẵn sàng'); ?>
+                    </div>
                 </div>
             </div>
             <p class="description">Last drain: <?php echo $lastDrain ? esc_html(human_time_diff($lastDrain) . ' trước') : 'chưa bao giờ'; ?>. Auto-index khi thêm/sửa sản phẩm: <strong>bật</strong> (Action Scheduler).</p>
@@ -171,6 +184,73 @@ final class AdminPage
             <form method="post" action="options.php">
                 <?php settings_fields('lexa_settings_group'); ?>
                 <table class="form-table" role="presentation">
+                    <tr>
+                        <th scope="row">Front-end search</th>
+                        <td>
+                            <label>
+                                <input type="checkbox" name="<?php echo esc_attr(Settings::OPTION); ?>[enabled]"
+                                    value="1" <?php checked(!empty($settings['enabled'])); ?> >
+                                Let Lexa handle product search
+                            </label>
+                            <p class="description">Unchecked falls back to the site&rsquo;s built-in search. This box must stay on the form &mdash; an absent checkbox counts as &ldquo;off&rdquo; when settings are saved.</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Newest products first</th>
+                        <td>
+                            <?php
+                            $mode  = $settings['recency_mode'] ?? 'off';
+                            $modes = [
+                                'off'    => 'Off — pure relevance (BM25F)',
+                                'light'  => 'Light — small nudge for new products',
+                                'medium' => 'Medium — recommended',
+                                'strong' => 'Strong — new products dominate unless the match is much worse',
+                                'date'   => 'Newest first — sort matches strictly by date, ignoring relevance',
+                            ];
+                            ?>
+                            <select name="<?php echo esc_attr(Settings::OPTION); ?>[recency_mode]">
+                                <?php foreach ($modes as $value => $label) : ?>
+                                    <option value="<?php echo esc_attr($value); ?>" <?php selected($mode, $value); ?>>
+                                        <?php echo esc_html($label); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <p class="description">
+                                Applies to both the search results page and the autocomplete API.
+                                With &ldquo;Newest first&rdquo; a weak match posted yesterday outranks a perfect match from last year &mdash; the other modes keep relevance in charge.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Date to use</th>
+                        <td>
+                            <?php $basis = $settings['recency_basis'] ?? 'created'; ?>
+                            <label style="display:block;margin-bottom:4px;">
+                                <input type="radio" name="<?php echo esc_attr(Settings::OPTION); ?>[recency_basis]"
+                                    value="created" <?php checked($basis, 'created'); ?> >
+                                Date created (<code>post_date</code>) &mdash; when the product was first published
+                            </label>
+                            <label style="display:block;">
+                                <input type="radio" name="<?php echo esc_attr(Settings::OPTION); ?>[recency_basis]"
+                                    value="modified" <?php checked($basis, 'modified'); ?> >
+                                Date modified (<code>post_modified</code>) &mdash; when it was last edited
+                            </label>
+                            <p class="description">
+                                <strong>Careful with &ldquo;date modified&rdquo;:</strong> WooCommerce bumps it on any edit, including
+                                price and stock changes and bulk edits &mdash; so an old product can jump to the top of search
+                                results just because its stock level changed.
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">Half-life</th>
+                        <td>
+                            <input type="number" min="1" max="3650" step="1" class="small-text"
+                                name="<?php echo esc_attr(Settings::OPTION); ?>[recency_halflife]"
+                                value="<?php echo esc_attr((int) ($settings['recency_halflife'] ?? 180)); ?>" > days
+                            <p class="description">How fast the boost fades: a product this old gets half the boost of a brand-new one. Ignored in &ldquo;Newest first&rdquo; mode.</p>
+                        </td>
+                    </tr>
                     <tr>
                         <th scope="row">Searchable post types</th>
                         <td>

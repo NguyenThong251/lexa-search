@@ -6,7 +6,7 @@ Tags: search, woocommerce, multilingual, vietnamese, relevance
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,13 @@ Deactivate the plugin, or untick "enabled" in Lexa Search → Settings. The site
 
 == Changelog ==
 
+= 0.4.0 =
+* Newest products first: a freshness pass that pushes recently added (or recently edited) products up the results. Configurable in Lexa Search → Settings — Off / Light / Medium / Strong, or "Newest first" for a strict date sort — with a choice of creation vs modified date and an adjustable half-life. Applies to the search page and the autocomplete API alike, and needs no reindex.
+* Fixed: saving the settings screen silently switched front-end search off, because the form had no "enabled" field for the sanitizer to read. The checkbox now exists, and a one-time migration re-enables installs that were switched off by the old bug (a deliberate "off" set in 0.4.0 or later is left alone).
+* Fixed: the Indexing dashboard and `wp lexa status` reported "front-end is using the engine" from the index-ready flag alone, so they showed green on exactly the sites where search was silently disabled. Both now report the real state and say which half is missing.
+* Fixed: clearing the half-life field stored 1 day instead of falling back to the 180-day default.
+* Self-hosted updates from the plugin's private GitHub repo.
+
 = 0.3.0 =
 * Typo tolerance + "did you mean".
 * Vietnamese stopwords and min-should-match for precise multi-word ranking.
@@ -59,6 +66,9 @@ Deactivate the plugin, or untick "enabled" in Lexa Search → Settings. The site
 * Front-end query integration (BM25F) replacing the title-only LIKE search.
 
 == Upgrade Notice ==
+
+= 0.4.0 =
+Changes search result ordering: new products are boosted by default (Medium). No reindex needed. Set Lexa Search → Settings → "Newest products first" to Off to keep the previous pure-relevance ranking.
 
 = 0.3.0 =
 First public preview. Rebuild the index after activating.

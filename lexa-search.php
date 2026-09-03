@@ -3,7 +3,7 @@
  * Plugin Name:       Lexa Search
  * Plugin URI:        https://quocduy.com.vn
  * Description:       Multilingual, mixed-language search (Vietnamese + English + model codes) for WordPress and WooCommerce — per-token language routing, diacritic-insensitive, BM25F relevance, self-hosted on MySQL.
- * Version:           0.3.0
+ * Version:           0.4.0
  * Requires PHP:      8.0
  * Requires at least: 6.0
  * Author:            quocduydev
@@ -20,7 +20,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('LEXA_VERSION', '0.3.0');
+define('LEXA_VERSION', '0.4.0');
 define('LEXA_FILE', __FILE__);
 define('LEXA_DIR', plugin_dir_path(__FILE__));
 define('LEXA_URL', plugin_dir_url(__FILE__));
