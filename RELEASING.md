@@ -16,7 +16,7 @@ plugin** — it would be committed to git and copied into every plugin backup.
 Add it to `wp-config.php`, above the `/* That's all, stop editing! */` line:
 
 ```php
-define('LEXA_GITHUB_TOKEN', 'github_pat_xxxxxxxxxxxxxxxxxxxx');
+define('LEXA_GITHUB_TOKEN', '<paste-your-fine-grained-token-here>');
 ```
 
 Create the token at **GitHub → Settings → Developer settings → Personal access

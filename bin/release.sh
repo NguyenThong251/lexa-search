@@ -63,7 +63,8 @@ fi
 
 # --- no secrets --------------------------------------------------------------
 
-if grep -rInE "(ghp_|gho_|github_pat_)[A-Za-z0-9_]{10,}" --exclude-dir=plugin-update-checker --exclude-dir=dist . >/dev/null 2>&1; then
+if grep -rInE "(ghp_|gho_|github_pat_)[A-Za-z0-9_]{10,}" \
+        --exclude-dir=plugin-update-checker --exclude-dir=dist --exclude-dir=.git . >/dev/null 2>&1; then
     fail "a GitHub token appears to be committed in the plugin tree -- it belongs in wp-config.php"
 fi
 ok "no GitHub token in the plugin tree"
