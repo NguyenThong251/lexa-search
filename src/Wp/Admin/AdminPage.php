@@ -65,7 +65,7 @@ final class AdminPage
         ?>
         <div class="wrap">
             <h1>Lexa Search &rarr; Indexing</h1>
-            <p>Search engine: <code>MySQL inverted-index + BM25F</code>. Front-end search wiring lands in P4 — indexing here does not change your site search yet.</p>
+            <p>Search engine: <code>MySQL inverted-index + BM25F</code>. Khi index sẵn sàng và công tắc đang bật, engine này phục vụ luôn tìm kiếm sản phẩm ở front-end.</p>
 
             <?php if ($stalled) : ?>
             <div class="notice notice-error" style="padding:10px 14px;">
@@ -104,6 +104,29 @@ final class AdminPage
                 </div>
             </div>
             <p class="description">Last drain: <?php echo $lastDrain ? esc_html(human_time_diff($lastDrain) . ' trước') : 'chưa bao giờ'; ?>. Auto-index khi thêm/sửa sản phẩm: <strong>bật</strong> (Action Scheduler).</p>
+            <?php
+            // Surfaced here because the effect (result ordering) is invisible on
+            // this screen — without it there is no way to confirm from the
+            // dashboard that the freshness setting actually took.
+            $recency    = Settings::recencyMode();
+            $recencyLbl = [
+                'off'    => 'tắt — xếp thuần theo độ liên quan',
+                'light'  => 'nhẹ',
+                'medium' => 'vừa',
+                'strong' => 'mạnh',
+                'date'   => 'sắp thuần theo ngày',
+            ];
+            ?>
+            <p class="description">
+                Ưu tiên sản phẩm mới: <strong><?php echo esc_html($recencyLbl[$recency] ?? $recency); ?></strong><?php
+                if ($recency !== 'off') {
+                    echo ' — theo ' . (Settings::recencyColumn() === 'post_modified_gmt' ? 'ngày cập nhật' : 'ngày tạo');
+                    if ($recency !== 'date') {
+                        echo ', half-life ' . esc_html((string) Settings::recencyHalfLifeDays()) . ' ngày';
+                    }
+                }
+                ?>. <a href="<?php echo esc_url(admin_url('admin.php?page=' . self::SLUG . '-settings')); ?>">Đổi</a>
+            </p>
 
             <p>
                 <button class="button button-primary" id="lexa-rebuild">Build / rebuild index</button>

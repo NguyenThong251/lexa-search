@@ -6,7 +6,7 @@ Tags: search, woocommerce, multilingual, vietnamese, relevance
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 0.4.0
+Stable tag: 0.4.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,10 @@ Deactivate the plugin, or untick "enabled" in Lexa Search → Settings. The site
 
 == Changelog ==
 
+= 0.4.1 =
+* The Indexing screen now shows the active "newest products first" setting — mode, which date it uses and the half-life — so the ranking change is verifiable from the dashboard instead of only by searching the storefront.
+* Fixed stale copy on the Indexing screen claiming that indexing "does not change your site search yet". It has done since 0.3.0.
+
 = 0.4.0 =
 * Newest products first: a freshness pass that pushes recently added (or recently edited) products up the results. Configurable in Lexa Search → Settings — Off / Light / Medium / Strong, or "Newest first" for a strict date sort — with a choice of creation vs modified date and an adjustable half-life. Applies to the search page and the autocomplete API alike, and needs no reindex.
 * Fixed: saving the settings screen silently switched front-end search off, because the form had no "enabled" field for the sanitizer to read. The checkbox now exists, and a one-time migration re-enables installs that were switched off by the old bug (a deliberate "off" set in 0.4.0 or later is left alone).
@@ -66,6 +70,9 @@ Deactivate the plugin, or untick "enabled" in Lexa Search → Settings. The site
 * Front-end query integration (BM25F) replacing the title-only LIKE search.
 
 == Upgrade Notice ==
+
+= 0.4.1 =
+Dashboard-only changes. No ranking, settings or index changes.
 
 = 0.4.0 =
 Changes search result ordering: new products are boosted by default (Medium). No reindex needed. Set Lexa Search → Settings → "Newest products first" to Off to keep the previous pure-relevance ranking.
