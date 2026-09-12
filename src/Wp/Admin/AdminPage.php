@@ -224,11 +224,11 @@ final class AdminPage
                             <?php
                             $mode  = $settings['recency_mode'] ?? 'off';
                             $modes = [
-                                'off'    => 'Off — pure relevance (BM25F)',
-                                'light'  => 'Light — small nudge for new products',
-                                'medium' => 'Medium — recommended',
-                                'strong' => 'Strong — new products dominate unless the match is much worse',
-                                'date'   => 'Newest first — sort matches strictly by date, ignoring relevance',
+                                'off'    => 'Off — pure relevance',
+                                'light'  => 'Light — breaks ties within 4% of the best match',
+                                'medium' => 'Medium — within 10% (recommended)',
+                                'strong' => 'Strong — within 25%',
+                                'date'   => 'Newest first — sort strictly by date, ignoring relevance',
                             ];
                             ?>
                             <select name="<?php echo esc_attr(Settings::OPTION); ?>[recency_mode]">
@@ -240,7 +240,9 @@ final class AdminPage
                             </select>
                             <p class="description">
                                 Applies to both the search results page and the autocomplete API.
-                                With &ldquo;Newest first&rdquo; a weak match posted yesterday outranks a perfect match from last year &mdash; the other modes keep relevance in charge.
+                                The boost is <strong>capped</strong>: a product can only climb past another it is already within that percentage of, so freshness breaks ties and never overturns a clear winner.
+                                Products whose <strong>title</strong> contains what the customer typed always rank above products that merely mention it in their description &mdash; whichever mode is selected.
+                                &ldquo;Newest first&rdquo; is the one exception to the cap: among equally-titled matches it sorts purely by date.
                             </p>
                         </td>
                     </tr>

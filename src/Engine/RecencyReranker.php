@@ -14,19 +14,29 @@ use Lexa\Engine\Contracts\Reranker;
  *
  * Modes:
  *   off                      no change; pure BM25F
- *   light | medium | strong  score × (1 + strength × freshness), so relevance
- *                            still decides between a good and a poor match
+ *   light | medium | strong  score + (topScore × strength × freshness) - a capped,
+ *                            additive lift, so freshness only reorders near-ties
  *   date                     strict newest-first among the matching documents
  */
 final class RecencyReranker implements Reranker
 {
     public const MODES = ['off', 'light', 'medium', 'strong', 'date'];
 
-    /** Boost strength per mode. 'off' and 'date' do not use it. */
+    /**
+     * How far a document may climb, as a fraction of the TOP score in the
+     * result set. The boost is additive and capped, so a document can only
+     * overtake another it is already within this fraction of: freshness
+     * reorders near-ties and never overturns a clear relevance winner.
+     *
+     * It used to be a multiplier (score x (1 + strength x freshness)), which
+     * was proportional to the document's own score and so let anything within
+     * ~53% of the top take first place on a busy catalogue. That is the wrong
+     * trade for a storefront: someone searching a model code wants that model.
+     */
     public const STRENGTH = [
-        'light'  => 0.35,
-        'medium' => 0.9,
-        'strong' => 2.5,
+        'light'  => 0.04,
+        'medium' => 0.10,
+        'strong' => 0.25,
     ];
 
     /**
@@ -56,7 +66,7 @@ final class RecencyReranker implements Reranker
         $this->resolveTimestamps = $resolveTimestamps;
     }
 
-    public function rerank(array $scores): array
+    public function rerank(array $scores, string $query = ''): array
     {
         if ($this->mode === 'off' || !$scores) {
             return $scores;
@@ -108,21 +118,27 @@ final class RecencyReranker implements Reranker
      */
     private function boost(array $pool, array $times): array
     {
-        $strength = self::STRENGTH[$this->mode] ?? 0.9;
+        $strength = self::STRENGTH[$this->mode] ?? 0.10;
         $halfLife = $this->halfLifeDays * 86400;
         $now      = time();
+        // The climb is capped against the BEST score in the set, not against a
+        // document's own score, so every document has the same maximum lift and
+        // the worst case is knowable: nothing more than $strength below the top
+        // can reach first place.
+        $budget = max($pool) * $strength;
+        if ($budget <= 0) {
+            return $pool;
+        }
 
         foreach ($pool as $id => $score) {
             $ts = $times[$id] ?? 0;
             if ($ts <= 0) {
-                continue; // unknown date — no boost, no penalty
+                continue; // unknown date - no boost, no penalty
             }
             // Exponential decay: 1.0 for something posted right now, 0.5 at one
-            // half-life, tending to 0 for old stock. Bounded, so at the lower
-            // strengths a brand-new weak match cannot overtake a much stronger
-            // old one — the reason this is not simply a date sort.
+            // half-life, tending to 0 for old stock.
             $freshness = exp(-M_LN2 * max(0, $now - $ts) / $halfLife);
-            $pool[$id] = $score * (1.0 + $strength * $freshness);
+            $pool[$id] = $score + $budget * $freshness;
         }
 
         arsort($pool);

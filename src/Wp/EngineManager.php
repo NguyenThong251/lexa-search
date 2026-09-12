@@ -5,6 +5,8 @@ namespace Lexa\Wp;
 use Lexa\Analysis\Analyzer;
 use Lexa\Engine\EngineConfig;
 use Lexa\Engine\InvertedIndexEngine;
+use Lexa\Engine\ChainReranker;
+use Lexa\Engine\ExactMatchReranker;
 use Lexa\Engine\RecencyReranker;
 
 /**
@@ -20,18 +22,53 @@ final class EngineManager
     {
         if (self::$engine === null) {
             global $wpdb;
+            $analyzer = new Analyzer();
             self::$engine = new InvertedIndexEngine(
                 new WpdbIndexStore($wpdb),
-                new Analyzer(),
+                $analyzer,
                 new EngineConfig(),
-                new RecencyReranker(               // a no-op while recency_mode is 'off'
-                    Settings::recencyMode(),
-                    Settings::recencyHalfLifeDays(),
-                    [self::class, 'postTimestamps']
+                // Order matters: the LAST pass wins. Freshness nudges near-ties,
+                // then the exact-match pass lifts anything whose TITLE actually
+                // contains what was typed above everything that merely mentions
+                // it in a description.
+                new ChainReranker(
+                    new RecencyReranker(           // a no-op while recency_mode is 'off'
+                        Settings::recencyMode(),
+                        Settings::recencyHalfLifeDays(),
+                        [self::class, 'postTimestamps']
+                    ),
+                    new ExactMatchReranker($analyzer, [self::class, 'postTitles'])
                 )
             );
         }
         return self::$engine;
+    }
+
+    /**
+     * Titles for the exact-match re-rank. Read live rather than from the index:
+     * the index stores terms, not the original string, and the pass needs the
+     * words in their original order to tell "SMQH 1200 4" from a description
+     * that happens to mention smqh, 1200 and 4 in three different sentences.
+     *
+     * @param int[] $ids
+     * @return array<int,string> docId => post_title
+     */
+    public static function postTitles(array $ids): array
+    {
+        if (!$ids) {
+            return [];
+        }
+        global $wpdb;
+        $in = implode(',', array_map('intval', $ids));
+        $rows = $wpdb->get_results(
+            "SELECT ID, post_title FROM {$wpdb->posts} WHERE ID IN ({$in})", // phpcs:ignore WordPress.DB
+            ARRAY_A
+        );
+        $out = [];
+        foreach ((array) $rows as $row) {
+            $out[(int) $row['ID']] = (string) ($row['post_title'] ?? '');
+        }
+        return $out;
     }
 
     /**

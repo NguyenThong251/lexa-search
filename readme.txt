@@ -6,7 +6,7 @@ Tags: search, woocommerce, multilingual, vietnamese, relevance
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 0.4.2
+Stable tag: 0.5.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,12 @@ Deactivate the plugin, or untick "enabled" in Lexa Search → Settings. The site
 
 == Changelog ==
 
+= 0.5.0 =
+* **Exact matches now rank first.** Searching a model code returned the wrong machine: BM25F scores each word independently and has no notion of adjacency, so products whose descriptions cross-reference other machines' codes outscored the product actually named that code — on the live catalogue "SMQH 1200 4" put the SMQH 1200 4 in third place. Products whose *title* contains what the customer typed now rank above products that only mention it in their description, with relevance still ordering results inside each group.
+* **The freshness boost is now capped.** It was multiplicative, so anything within ~53% of the best match could take first place — a newly added product could displace an exact model-code match. It is now an additive lift bounded by a percentage of the top score (4% / 10% / 25%), so freshness breaks ties and never overturns a clear winner.
+* Fixed: a typo-corrected query ("may cuaa") reached the ranking passes uncorrected, which could push the product the correction was made for *below* the ones it was competing with.
+* Fixed: "Newest first" was silently doing nothing, because the exact-match pass re-sorted by score and discarded the date ordering.
+
 = 0.4.2 =
 * The plugin's repository is now public, so update checks need no GitHub token and no configuration at all. A token remains optional, purely to raise GitHub's unauthenticated rate limit on busy shared hosts.
 
@@ -73,6 +79,9 @@ Deactivate the plugin, or untick "enabled" in Lexa Search → Settings. The site
 * Front-end query integration (BM25F) replacing the title-only LIKE search.
 
 == Upgrade Notice ==
+
+= 0.5.0 =
+Fixes exact-keyword search: the product you name now ranks first. Changes result ordering; no reindex needed.
 
 = 0.4.2 =
 Documentation only. If you added LEXA_GITHUB_TOKEN to wp-config.php you can now remove it — updates work without it.

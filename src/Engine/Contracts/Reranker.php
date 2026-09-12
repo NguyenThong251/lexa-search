@@ -8,15 +8,16 @@ namespace Lexa\Engine\Contracts;
  * the re-rank a no-op for small limits (autocomplete asks for 10), so order of
  * operations matters here.
  *
- * Kept WP-free like the rest of Engine/: an implementation receives nothing but
- * scores and returns scores. The WordPress-specific source of truth (post
- * dates, popularity, stock, …) lives in the Wp/ layer.
+ * Kept WP-free like the rest of Engine/: an implementation receives scores and
+ * the raw query, and returns scores. The WordPress-specific sources of truth
+ * (post dates, titles, popularity, stock, …) are injected as resolvers.
  */
 interface Reranker
 {
     /**
      * @param array<int,float> $scores docId => score, sorted descending
+     * @param string $query the raw query string the user typed
      * @return array<int,float> docId => score, sorted descending
      */
-    public function rerank(array $scores): array;
+    public function rerank(array $scores, string $query): array;
 }

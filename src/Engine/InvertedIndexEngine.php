@@ -101,8 +101,9 @@ final class InvertedIndexEngine implements SearchEngine
         // typo tolerance: expand unknown query words to their nearest indexed
         // term, and build a "did you mean" suggestion. Gated by catalog size.
         $this->lastSuggestion = null;
+        $rerankQuery          = $q;
         if ($this->cfg->typo && $n > 0 && $n <= $this->cfg->typoMaxDocs) {
-            [$terms, $byPos, $df, $this->lastSuggestion] = $this->expandTypos($q, $terms, $byPos, $df);
+            [$terms, $byPos, $df, $this->lastSuggestion, $rerankQuery] = $this->expandTypos($q, $terms, $byPos, $df);
         }
 
         // each query word (token position) is a group; require a doc to match
@@ -124,7 +125,7 @@ final class InvertedIndexEngine implements SearchEngine
         // Second pass (e.g. freshness). Must run BEFORE the truncation below,
         // or it would only ever reorder the handful of rows a small limit keeps.
         if ($this->reranker !== null && $scores) {
-            $scores = $this->reranker->rerank($scores);
+            $scores = $this->reranker->rerank($scores, $rerankQuery);
         }
 
         $out = [];
@@ -144,11 +145,12 @@ final class InvertedIndexEngine implements SearchEngine
 
     /**
      * Expand unknown query words (likely typos) to their nearest indexed term.
-     * @return array{0:string[],1:array,2:array,3:?string} [terms, byPos, df, suggestion]
+     * @return array{0:string[],1:array,2:array,3:?string,4:string} [terms, byPos, df, suggestion, effectiveQuery]
      */
     private function expandTypos(string $q, array $terms, array $byPos, array $df): array
     {
         $corrections = [];
+        $applied     = []; // only the ones actually substituted into the query
         $added = false;
 
         foreach ($byPos as $pos => $tmap) {
@@ -178,6 +180,7 @@ final class InvertedIndexEngine implements SearchEngine
                 $byPos[$pos][$best['term']] = true; // expand the query — now it can match
                 $terms[] = $best['term'];
                 $corrections[$word] = $best['term'];
+                $applied[$word]     = $best['term'];
                 $added = true;
             } elseif ($best['dist'] <= $auto + 1) {
                 $corrections[$word] = $best['term']; // suggest only (too far to auto-correct)
@@ -189,7 +192,12 @@ final class InvertedIndexEngine implements SearchEngine
             $terms = array_values(array_unique($terms));
             $df    = $this->store->dfForTerms($terms);
         }
-        return [$terms, $byPos, $df, $suggestion];
+        // Re-rank passes compare the user's words against document titles. They
+        // must see the CORRECTED words, or a doc containing what the user meant
+        // scores no credit for it while its competitors keep theirs — which
+        // ranks the intended product below the ones it was competing with.
+        $effective = $applied ? ($this->buildSuggestion($q, $applied) ?? $q) : $q;
+        return [$terms, $byPos, $df, $suggestion, $effective];
     }
 
     private function buildSuggestion(string $q, array $corrections): ?string
