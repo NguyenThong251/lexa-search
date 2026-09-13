@@ -6,7 +6,7 @@ Tags: search, woocommerce, multilingual, vietnamese, relevance
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 0.5.0
+Stable tag: 0.5.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,10 @@ Deactivate the plugin, or untick "enabled" in Lexa Search → Settings. The site
 
 == Changelog ==
 
+= 0.5.1 =
+* **Model codes are no longer "corrected" into other products.** Searching a code the shop does not stock could rewrite it into a different one — "SM 2000 DSSBD" became "sm 2000 dsb", matched a single unrelated machine, and WooCommerce then redirected the customer straight into it. Codes (anything containing a digit, or a vowel-less run of letters such as DSSBD, SMQH, KW) are now only ever offered as a "did you mean", never substituted. A correction that changes a word's length by more than one character is refused for the same reason. Ordinary typos ("may cuaa") are corrected exactly as before.
+* **A single search result no longer jumps straight into the product.** WooCommerce does that by default, which is safe for an exact database match but not for a relevance engine that also matches fuzzily and inside descriptions: one result means one thing passed the filter, not that it is what the customer wanted. The results page is shown instead, so the search terms and the "did you mean" stay visible.
+
 = 0.5.0 =
 * **Exact matches now rank first.** Searching a model code returned the wrong machine: BM25F scores each word independently and has no notion of adjacency, so products whose descriptions cross-reference other machines' codes outscored the product actually named that code — on the live catalogue "SMQH 1200 4" put the SMQH 1200 4 in third place. Products whose *title* contains what the customer typed now rank above products that only mention it in their description, with relevance still ordering results inside each group.
 * **The freshness boost is now capped.** It was multiplicative, so anything within ~53% of the best match could take first place — a newly added product could displace an exact model-code match. It is now an additive lift bounded by a percentage of the top score (4% / 10% / 25%), so freshness breaks ties and never overturns a clear winner.
@@ -79,6 +83,9 @@ Deactivate the plugin, or untick "enabled" in Lexa Search → Settings. The site
 * Front-end query integration (BM25F) replacing the title-only LIKE search.
 
 == Upgrade Notice ==
+
+= 0.5.1 =
+Searching an unknown model code no longer lands the customer inside an unrelated product. No reindex needed.
 
 = 0.5.0 =
 Fixes exact-keyword search: the product you name now ranks first. Changes result ordering; no reindex needed.

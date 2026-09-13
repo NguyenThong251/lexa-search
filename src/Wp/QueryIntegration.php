@@ -23,6 +23,7 @@ final class QueryIntegration
     {
         add_action('pre_get_posts', [self::class, 'maybeHandle']);
         add_filter('posts_search', [self::class, 'neutralizeSearch'], 999, 2);
+        add_filter('woocommerce_redirect_single_search_result', [self::class, 'allowSingleResultRedirect']);
         add_action('rest_api_init', [self::class, 'restRoutes']);
     }
 
@@ -57,6 +58,30 @@ final class QueryIntegration
         $query->set('orderby', 'post__in');   // preserve BM25F ranking
         // keep 's' so the "you searched for X" title still renders; the LIKE is
         // removed by neutralizeSearch() below.
+    }
+
+    /**
+     * WooCommerce redirects a product search straight into the product when the
+     * search returns exactly one (wc-template-functions.php: "Redirect to the
+     * product page if we have a single product").
+     *
+     * That is safe for an exact SQL LIKE, but not for a relevance engine: this
+     * one matches fuzzily and across descriptions, so "one result" means "one
+     * thing passed the filter", not "this is certainly what you wanted". A
+     * customer searching a model code we do not stock was being teleported into
+     * an unrelated machine with nothing on screen to say the code was not found.
+     *
+     * Showing the results page instead costs a click and keeps the search terms
+     * — and the "did you mean" — visible. Sites that prefer the old behaviour
+     * can re-enable it with the same WooCommerce filter at a later priority.
+     */
+    public static function allowSingleResultRedirect($redirect)
+    {
+        global $wp_query;
+        if ($wp_query instanceof \WP_Query && $wp_query->get('lexa_handled')) {
+            return false;
+        }
+        return $redirect;
     }
 
     public static function neutralizeSearch($search, $query)

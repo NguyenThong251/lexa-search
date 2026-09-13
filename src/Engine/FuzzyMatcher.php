@@ -17,6 +17,45 @@ final class FuzzyMatcher
         return $len <= 4 ? 1 : 2;
     }
 
+    /**
+     * Does this term look like a product / model code rather than a word?
+     *
+     * Codes must never be auto-corrected: rewriting one does not fix a spelling,
+     * it asks for a different product. A real case from the catalogue —
+     * "SM 2000 DSSBD" had DSSBD silently rewritten to "dsb", which matched a
+     * single unrelated machine, and WooCommerce then redirected the customer
+     * straight into it.
+     *
+     * The token classifier only flags ALNUM_CODE for letters+digits ("HS7601"),
+     * so purely alphabetic codes — DSSBD, SMQH, KW, SM — arrive here looking
+     * like ordinary Latin words. Vietnamese and English words always carry a
+     * vowel; these consonant runs do not, which separates them cleanly.
+     */
+    public static function isCodeLike(string $term): bool
+    {
+        if ($term === '') {
+            return false;
+        }
+        if (preg_match('/\d/', $term)) {
+            return true; // any digit => a code, not a word
+        }
+        // ASCII-only and vowel-less => a consonant run, i.e. an abbreviation.
+        return (bool) preg_match('/^[a-z]+$/', $term) && !preg_match('/[aeiouy]/', $term);
+    }
+
+    /**
+     * Is $candidate a plausible correction of $word, beyond raw edit distance?
+     *
+     * A correction that also changes the LENGTH by more than one is usually a
+     * different word rather than a typo ("dssbd" -> "dsb" is two edits and two
+     * characters shorter). Genuine typos — doubled or dropped letters,
+     * transpositions — stay within one.
+     */
+    public static function isPlausible(string $word, string $candidate): bool
+    {
+        return abs(mb_strlen($word) - mb_strlen($candidate)) <= 1;
+    }
+
     /** Bounded Damerau-Levenshtein (optimal string alignment). Returns dist or $max+1. */
     public static function distance(string $a, string $b, int $max): int
     {

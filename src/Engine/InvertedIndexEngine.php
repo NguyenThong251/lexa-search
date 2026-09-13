@@ -176,7 +176,18 @@ final class InvertedIndexEngine implements SearchEngine
                 continue;
             }
             $auto = FuzzyMatcher::autoThreshold(mb_strlen($word));
-            if ($best['dist'] <= $auto) {
+            // Two things must never be silently rewritten:
+            //  - a model code, because changing it asks for a DIFFERENT product
+            //    rather than fixing a spelling ("DSSBD" was being rewritten to
+            //    "dsb", which matched one unrelated machine);
+            //  - a "correction" that also changes the length by more than one,
+            //    which is a different word rather than a typo.
+            // Both still produce a "did you mean" suggestion below; they just
+            // do not change what was searched for.
+            $mayAutoApply = !FuzzyMatcher::isCodeLike($word)
+                && FuzzyMatcher::isPlausible($word, $best['term']);
+
+            if ($mayAutoApply && $best['dist'] <= $auto) {
                 $byPos[$pos][$best['term']] = true; // expand the query — now it can match
                 $terms[] = $best['term'];
                 $corrections[$word] = $best['term'];
