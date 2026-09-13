@@ -19,6 +19,15 @@ final class QueryIntegration
 {
     public const READY_OPTION = 'lexa_ready';
 
+    /**
+     * The analyzer config_hash the current index was built with. A plugin update
+     * that changes tokenisation leaves every existing index subtly wrong — terms
+     * the new analyzer emits simply are not in it — and nothing on screen said
+     * so, so the fix looked like it had not worked. Compared on the Indexing
+     * screen; see AdminPage::analyzerChanged().
+     */
+    public const ANALYZER_OPTION = 'lexa_analyzer_hash';
+
     public static function register(): void
     {
         add_action('pre_get_posts', [self::class, 'maybeHandle']);

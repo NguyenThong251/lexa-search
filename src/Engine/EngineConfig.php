@@ -29,7 +29,7 @@ final class EngineConfig
         ];
         $this->kindWeights = ($o['kindWeights'] ?? []) + [
             'lower' => 1.0, 'original' => 1.0, 'fold' => 1.0, 'code_exact' => 1.0,
-            'code_digits' => 0.85, 'bigram' => 0.7, 'code_prefix' => 0.35, 'stem' => 0.5,
+            'code_digits' => 0.85, 'code_letters' => 0.85, 'bigram' => 0.7, 'code_prefix' => 0.35, 'stem' => 0.5,
         ];
         $this->k1 = $o['k1'] ?? 1.2;
         $this->b  = $o['b'] ?? 0.75;

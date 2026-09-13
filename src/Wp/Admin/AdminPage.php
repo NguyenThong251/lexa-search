@@ -41,6 +41,20 @@ final class AdminPage
         ]);
     }
 
+    /**
+     * True when the index was built by a different analyzer configuration than
+     * the one running now — i.e. a plugin update changed tokenisation and the
+     * stored terms no longer match what a query produces.
+     */
+    public static function analyzerChanged(): bool
+    {
+        $built = (string) get_option(\Lexa\Wp\QueryIntegration::ANALYZER_OPTION, '');
+        if ($built === '') {
+            return false; // never recorded (pre-0.5.2 build) — do not cry wolf
+        }
+        return $built !== (new \Lexa\Analysis\Analyzer())->configHash();
+    }
+
     public static function renderIndexing(): void
     {
         if (!current_user_can('manage_options')) {
@@ -66,6 +80,13 @@ final class AdminPage
         <div class="wrap">
             <h1>Lexa Search &rarr; Indexing</h1>
             <p>Search engine: <code>MySQL inverted-index + BM25F</code>. Khi index sẵn sàng và công tắc đang bật, engine này phục vụ luôn tìm kiếm sản phẩm ở front-end.</p>
+
+            <?php if (self::analyzerChanged()) : ?>
+            <div class="notice notice-error" style="padding:10px 14px;">
+                <strong>Cách phân tích từ khoá đã thay đổi sau khi cập nhật plugin</strong> — index hiện tại được xây bằng phiên bản cũ nên
+                một số sản phẩm sẽ không tìm thấy. Bấm <em>Build / rebuild index</em> để cập nhật.
+            </div>
+            <?php endif; ?>
 
             <?php if ($stalled) : ?>
             <div class="notice notice-error" style="padding:10px 14px;">
@@ -342,6 +363,7 @@ final class AdminPage
         $done  = $count < $batch;
         if ($done) {
             update_option(\Lexa\Wp\QueryIntegration::READY_OPTION, 1); // build complete → engine may serve front-end
+            update_option(\Lexa\Wp\QueryIntegration::ANALYZER_OPTION, (new \Lexa\Analysis\Analyzer())->configHash());
         }
         wp_send_json_success([
             'indexed' => $count,

@@ -6,7 +6,7 @@ Tags: search, woocommerce, multilingual, vietnamese, relevance
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 0.5.1
+Stable tag: 0.5.2
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,12 @@ Deactivate the plugin, or untick "enabled" in Lexa Search → Settings. The site
 
 == Changelog ==
 
+= 0.5.2 =
+**Rebuild the index after updating** (Lexa Search → Indexing → Build / rebuild index). This release changes how codes are indexed; the screen now warns you when the index was built by an older analyzer.
+
+* **Either half of a model code now finds the product.** Customers do not reproduce a catalogue's spacing: the product "… – SM 2000DSBD/SM 2000DSSBD" could not be found by "SM 2000 DSSBD", because the indexer emitted the code whole, its digit runs and a prefix ladder — but never the letters. Letter runs are now emitted too, mirroring the digit rule, so "SM 2000 DSSBD", "SM 2000DSSBD", "2000DSSBD" and "DSSBD" all reach it. This also splits codes joined by an internal separator, so the second code in "2000DSBD/SM 2000DSSBD" is reachable as well.
+* The Indexing screen now detects an index built with a different analyzer configuration and says so, instead of leaving products silently unfindable after an update.
+
 = 0.5.1 =
 * **Model codes are no longer "corrected" into other products.** Searching a code the shop does not stock could rewrite it into a different one — "SM 2000 DSSBD" became "sm 2000 dsb", matched a single unrelated machine, and WooCommerce then redirected the customer straight into it. Codes (anything containing a digit, or a vowel-less run of letters such as DSSBD, SMQH, KW) are now only ever offered as a "did you mean", never substituted. A correction that changes a word's length by more than one character is refused for the same reason. Ordinary typos ("may cuaa") are corrected exactly as before.
 * **A single search result no longer jumps straight into the product.** WooCommerce does that by default, which is safe for an exact database match but not for a relevance engine that also matches fuzzily and inside descriptions: one result means one thing passed the filter, not that it is what the customer wanted. The results page is shown instead, so the search terms and the "did you mean" stay visible.
@@ -83,6 +89,9 @@ Deactivate the plugin, or untick "enabled" in Lexa Search → Settings. The site
 * Front-end query integration (BM25F) replacing the title-only LIKE search.
 
 == Upgrade Notice ==
+
+= 0.5.2 =
+REBUILD THE INDEX after updating. Fixes model codes being unfindable when typed with different spacing than the product title.
 
 = 0.5.1 =
 Searching an unknown model code no longer lands the customer inside an unrelated product. No reindex needed.
