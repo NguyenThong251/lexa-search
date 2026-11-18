@@ -6,7 +6,7 @@ Tags: search, woocommerce, multilingual, vietnamese, relevance
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 0.5.2
+Stable tag: 0.5.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,6 +51,12 @@ No. The default engine runs entirely on your MySQL database.
 Deactivate the plugin, or untick "enabled" in Lexa Search → Settings. The site falls back to default search.
 
 == Changelog ==
+
+= 0.5.3 =
+**Rebuild the index after updating** (Lexa Search → Indexing → Build / rebuild index) so existing products pick up their model code.
+
+* **Products are now found by their SKU V2 model code** (`_sku_v2` meta). The model code is indexed in the SKU zone alongside `_sku`, so "KW TC2+2", "kw tc2+2" and "TC2+2" all rank that product first.
+* A `_sku` that holds a URL (e.g. a link to the English page) is no longer indexed — it only added noise.
 
 = 0.5.2 =
 **Rebuild the index after updating** (Lexa Search → Indexing → Build / rebuild index). This release changes how codes are indexed; the screen now warns you when the index was built by an older analyzer.
