@@ -362,8 +362,7 @@ final class AdminPage
         $count = count($ids);
         $done  = $count < $batch;
         if ($done) {
-            update_option(\Lexa\Wp\QueryIntegration::READY_OPTION, 1); // build complete → engine may serve front-end
-            update_option(\Lexa\Wp\QueryIntegration::ANALYZER_OPTION, (new \Lexa\Analysis\Analyzer())->configHash());
+            \Lexa\Wp\QueryIntegration::markBuilt();
         }
         wp_send_json_success([
             'indexed' => $count,

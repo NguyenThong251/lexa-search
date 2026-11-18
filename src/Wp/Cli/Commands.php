@@ -55,8 +55,7 @@ final class Commands
         $bar->finish();
         $engine->flush();
         if ($limit <= 0) {
-            update_option(\Lexa\Wp\QueryIntegration::READY_OPTION, 1); // full build → front-end may use the engine
-            update_option(\Lexa\Wp\QueryIntegration::ANALYZER_OPTION, (new \Lexa\Analysis\Analyzer())->configHash());
+            \Lexa\Wp\QueryIntegration::markBuilt();
         }
         \WP_CLI::success(sprintf('Indexed %d docs. Total in index: %d.', $total, $engine->stats()['doc_count']));
     }

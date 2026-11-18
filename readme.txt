@@ -6,7 +6,7 @@ Tags: search, woocommerce, multilingual, vietnamese, relevance
 Requires at least: 6.0
 Tested up to: 6.9
 Requires PHP: 8.0
-Stable tag: 0.5.3
+Stable tag: 0.5.4
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -51,6 +51,10 @@ No. The default engine runs entirely on your MySQL database.
 Deactivate the plugin, or untick "enabled" in Lexa Search → Settings. The site falls back to default search.
 
 == Changelog ==
+
+= 0.5.4 =
+* **Read-only status endpoint** `GET /wp-json/lexa/v1/status?id=<product id>`: the running plugin version, the version and time the index was last fully built, and — for a published product — whether it has a SKU V2 and which zones it has in the index now versus what the current code would produce. Makes "I rebuilt but it still does not find it" diagnosable from outside the server.
+* A full rebuild now records the plugin version that built it.
 
 = 0.5.3 =
 **Rebuild the index after updating** (Lexa Search → Indexing → Build / rebuild index) so existing products pick up their model code.

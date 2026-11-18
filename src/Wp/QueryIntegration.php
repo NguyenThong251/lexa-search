@@ -28,6 +28,17 @@ final class QueryIntegration
      */
     public const ANALYZER_OPTION = 'lexa_analyzer_hash';
 
+    public const BUILT_VERSION_OPTION = 'lexa_built_version';
+    public const BUILT_AT_OPTION      = 'lexa_built_at';
+
+    public static function markBuilt(): void
+    {
+        update_option(self::READY_OPTION, 1);
+        update_option(self::ANALYZER_OPTION, (new \Lexa\Analysis\Analyzer())->configHash());
+        update_option(self::BUILT_VERSION_OPTION, LEXA_VERSION);
+        update_option(self::BUILT_AT_OPTION, time());
+    }
+
     public static function register(): void
     {
         add_action('pre_get_posts', [self::class, 'maybeHandle']);
@@ -109,6 +120,46 @@ final class QueryIntegration
             'args'                => ['q' => ['required' => true], 'limit' => ['default' => 10]],
             'callback'            => [self::class, 'restSearch'],
         ]);
+        register_rest_route('lexa/v1', '/status', [
+            'methods'             => 'GET',
+            'permission_callback' => '__return_true',
+            'args'                => ['id' => ['default' => 0]],
+            'callback'            => [self::class, 'restStatus'],
+        ]);
+    }
+
+    public static function restStatus(\WP_REST_Request $req)
+    {
+        global $wpdb;
+        $builtAt = (int) get_option(self::BUILT_AT_OPTION, 0);
+        $out = [
+            'version'        => LEXA_VERSION,
+            'built_version'  => (string) get_option(self::BUILT_VERSION_OPTION, ''),
+            'built_at'       => $builtAt ? gmdate('c', $builtAt) : null,
+            'analyzer_stale' => \Lexa\Wp\Admin\AdminPage::analyzerChanged(),
+            'active'         => self::active(),
+            'docs'           => (int) EngineManager::engine()->stats()['doc_count'],
+        ];
+
+        $id   = (int) $req->get_param('id');
+        $post = $id ? get_post($id) : null;
+        if ($post && $post->post_type === 'product' && $post->post_status === 'publish') {
+            $fresh = array_column(DocumentFactory::fromPost($post)->fields, 'zone');
+            $out['product'] = [
+                'id'               => $id,
+                'has_sku_v2'       => trim((string) get_post_meta($id, '_sku_v2', true)) !== '',
+                'zones_now'        => array_values($fresh),
+                'zones_in_index'   => array_map('strval', (array) $wpdb->get_col($wpdb->prepare(
+                    "SELECT zone FROM `{$wpdb->prefix}lexa_doc_zones` WHERE doc_id = %d ORDER BY zone",
+                    $id
+                ))),
+            ];
+        }
+
+        $res = rest_ensure_response($out);
+        $res->header('Cache-Control', 'no-store');
+        $res->header('X-LiteSpeed-Cache-Control', 'no-cache');
+        return $res;
     }
 
     public static function restSearch(\WP_REST_Request $req)
